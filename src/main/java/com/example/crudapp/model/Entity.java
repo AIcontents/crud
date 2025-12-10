@@ -1,25 +1,29 @@
 package com.example.crudapp.model;
 
-public class Entity {
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-    private int id;
+public class Entity {
+    private UUID id;
     private String name;
     private String description;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    public Entity() {
-    }
-
-    public Entity(int id, String name, String description) {
+    public Entity(UUID id, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
-        setName(name);
-        setDescription(description);
+        this.name = name;
+        this.description = description;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
-    public int getId() {
+    // Getters and Setters
+    public UUID getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -28,9 +32,6 @@ public class Entity {
     }
 
     public void setName(String name) {
-        if (name == null || name.length() < 3 || name.length() > 50) {
-            throw new ValidationException("Name must be between 3 and 50 characters.");
-        }
         this.name = name;
     }
 
@@ -39,9 +40,27 @@ public class Entity {
     }
 
     public void setDescription(String description) {
-        if (description != null && description.length() > 255) {
-            throw new ValidationException("Description cannot be longer than 255 characters.");
-        }
         this.description = description;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String toString() {
+        return name; // Used for display in ListView
     }
 }

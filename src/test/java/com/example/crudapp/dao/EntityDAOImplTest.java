@@ -1,83 +1,105 @@
-
 package com.example.crudapp.dao;
 
 import com.example.crudapp.model.Entity;
-import org.junit.jupiter.api.*;
+import com.example.crudapp.model.ValidationException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class EntityDAOImplTest {
+public class EntityDAOImplTest {
 
-    private Connection connection;
-    private final EntityDAO entityDAO = new EntityDAOImpl();
+    private EntityDAO entityDAO;
 
-    @BeforeAll
-    void setUp() throws SQLException {
-        connection = DriverManager.getConnection("jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1");
-        Database.setConnection(connection);
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE entity (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(50), description VARCHAR(255))");
-        }
-    }
-
-    @AfterAll
-    void tearDown() throws SQLException {
-        connection.close();
+    @BeforeEach
+    void setUp() {
+        entityDAO = new EntityDAOImpl();
+        // Ensure the table is clean before each test
+        clearDatabase();
     }
 
     @AfterEach
-    void cleanUp() throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("TRUNCATE TABLE entity");
+    void tearDown() {
+        // Clean up after each test
+        clearDatabase();
+    }
+
+    private void clearDatabase() {
+        try (Connection conn = Database.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("DELETE FROM entities");
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
     @Test
-    void testAddAndGetEntity() {
-        Entity entity = new Entity(0, "Test Name", "Test Description");
-        entityDAO.add(entity);
-        assertNotEquals(0, entity.getId());
+    void testAddAndGetEntity() throws ValidationException {
+        Entity newEntity = new Entity(null, "Test Entity", "Description", null, null);
+        entityDAO.add(newEntity);
 
-        Entity retrievedEntity = entityDAO.get(entity.getId());
-        assertNotNull(retrievedEntity);
-        assertEquals("Test Name", retrievedEntity.getName());
+        assertNotNull(newEntity.getId());
+
+        Optional<Entity> retrievedEntity = entityDAO.get(newEntity.getId());
+
+        assertTrue(retrievedEntity.isPresent());
+        assertEquals("Test Entity", retrievedEntity.get().getName());
+        assertNotNull(retrievedEntity.get().getCreatedAt());
+        assertNotNull(retrievedEntity.get().getUpdatedAt());
     }
 
     @Test
-    void testGetAll() {
-        entityDAO.add(new Entity(0, "Name1", "Desc1"));
-        entityDAO.add(new Entity(0, "Name2", "Desc2"));
+    void testGetAllEntities() throws ValidationException {
+        Entity entity1 = new Entity(null, "Entity 1", "Desc 1", null, null);
+        Entity entity2 = new Entity(null, "Entity 2", "Desc 2", null, null);
+        entityDAO.add(entity1);
+        entityDAO.add(entity2);
 
-        List<Entity> entities = entityDAO.getAll(1, 10, null);
-        assertEquals(2, entities.size());
+        List<Entity> allEntities = entityDAO.getAll();
+        assertEquals(2, allEntities.size());
     }
 
     @Test
-    void testUpdate() {
-        Entity entity = new Entity(0, "Original Name", "Original Desc");
+    void testUpdateEntity() throws ValidationException {
+        Entity entity = new Entity(null, "Original Name", "Original Desc", null, null);
         entityDAO.add(entity);
+        assertNotNull(entity.getId());
 
         entity.setName("Updated Name");
         entityDAO.update(entity);
 
-        Entity updatedEntity = entityDAO.get(entity.getId());
-        assertEquals("Updated Name", updatedEntity.getName());
+        Optional<Entity> updatedEntity = entityDAO.get(entity.getId());
+        assertTrue(updatedEntity.isPresent());
+        assertEquals("Updated Name", updatedEntity.get().getName());
+        // Check that updatedAt is after createdAt
+        assertTrue(updatedEntity.get().getUpdatedAt().isAfter(updatedEntity.get().getCreatedAt()));
     }
 
     @Test
-    void testDelete() {
-        Entity entity = new Entity(0, "To Be Deleted", "Delete me");
+    void testDeleteEntity() throws ValidationException {
+        Entity entity = new Entity(null, "To Be Deleted", "Desc", null, null);
         entityDAO.add(entity);
+        assertNotNull(entity.getId());
 
         entityDAO.delete(entity.getId());
-        assertNull(entityDAO.get(entity.getId()));
+
+        Optional<Entity> deletedEntity = entityDAO.get(entity.getId());
+        assertFalse(deletedEntity.isPresent());
+    }
+
+    @Test
+    void testAddEntityWithEmptyNameThrowsException() {
+        Entity entity = new Entity(null, "", "Description", null, null);
+        assertThrows(ValidationException.class, () -> entityDAO.add(entity));
     }
 }
-

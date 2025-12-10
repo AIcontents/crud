@@ -1,95 +1,115 @@
 package com.example.crudapp.dao;
 
 import com.example.crudapp.model.Entity;
+import com.example.crudapp.model.ValidationException;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public class EntityDAOImpl implements EntityDAO {
 
     @Override
-    public void add(Entity entity) {
-        String sql = "INSERT INTO entity (name, description) VALUES (?, ?)";
-        try (PreparedStatement ps = Database.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, entity.getName());
-            ps.setString(2, entity.getDescription());
-            ps.executeUpdate();
-            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    entity.setId(generatedKeys.getInt(1));
-                }
+    public void add(Entity entity) throws ValidationException {
+        validateEntity(entity);
+        String sql = "INSERT INTO entities (id, name, description, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            entity.setId(UUID.randomUUID()); // Assign a new UUID
+            entity.setCreatedAt(LocalDateTime.now());
+            entity.setUpdatedAt(LocalDateTime.now());
+
+            pstmt.setObject(1, entity.getId());
+            pstmt.setString(2, entity.getName());
+            pstmt.setString(3, entity.getDescription());
+            pstmt.setTimestamp(4, Timestamp.valueOf(entity.getCreatedAt()));
+            pstmt.setTimestamp(5, Timestamp.valueOf(entity.getUpdatedAt()));
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void update(Entity entity) throws ValidationException {
+        validateEntity(entity);
+        String sql = "UPDATE entities SET name = ?, description = ?, updatedAt = ? WHERE id = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            entity.setUpdatedAt(LocalDateTime.now());
+
+            pstmt.setString(1, entity.getName());
+            pstmt.setString(2, entity.getDescription());
+            pstmt.setTimestamp(3, Timestamp.valueOf(entity.getUpdatedAt()));
+            pstmt.setObject(4, entity.getId());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void delete(UUID id) {
+        String sql = "DELETE FROM entities WHERE id = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setObject(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public Optional<Entity> get(UUID id) {
+        String sql = "SELECT * FROM entities WHERE id = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setObject(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return Optional.of(mapRowToEntity(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return Optional.empty();
     }
 
     @Override
-    public void update(Entity entity) {
-        String sql = "UPDATE entity SET name = ?, description = ? WHERE id = ?";
-        try (PreparedStatement ps = Database.getConnection().prepareStatement(sql)) {
-            ps.setString(1, entity.getName());
-            ps.setString(2, entity.getDescription());
-            ps.setInt(3, entity.getId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void delete(int id) {
-        String sql = "DELETE FROM entity WHERE id = ?";
-        try (PreparedStatement ps = Database.getConnection().prepareStatement(sql)) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public Entity get(int id) {
-        String sql = "SELECT * FROM entity WHERE id = ?";
-        try (PreparedStatement ps = Database.getConnection().prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return new Entity(rs.getInt("id"), rs.getString("name"), rs.getString("description"));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    @Override
-    public List<Entity> getAll(int page, int pageSize, String filter) {
+    public List<Entity> getAll() {
         List<Entity> entities = new ArrayList<>();
-        String sql = "SELECT * FROM entity";
-        if (filter != null && !filter.isEmpty()) {
-            sql += " WHERE name LIKE ?";
-        }
-        sql += " LIMIT ? OFFSET ?";
-
-        try (PreparedStatement ps = Database.getConnection().prepareStatement(sql)) {
-            int paramIndex = 1;
-            if (filter != null && !filter.isEmpty()) {
-                ps.setString(paramIndex++, "%" + filter + "%");
-            }
-            ps.setInt(paramIndex++, pageSize);
-            ps.setInt(paramIndex, (page - 1) * pageSize);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    entities.add(new Entity(rs.getInt("id"), rs.getString("name"), rs.getString("description")));
-                }
+        String sql = "SELECT * FROM entities";
+        try (Connection conn = Database.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                entities.add(mapRowToEntity(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return entities;
+    }
+
+    private Entity mapRowToEntity(ResultSet rs) throws SQLException {
+        return new Entity(
+                (UUID) rs.getObject("id"),
+                rs.getString("name"),
+                rs.getString("description"),
+                rs.getTimestamp("createdAt").toLocalDateTime(),
+                rs.getTimestamp("updatedAt").toLocalDateTime()
+        );
+    }
+
+    private void validateEntity(Entity entity) throws ValidationException {
+        if (entity.getName() == null || entity.getName().trim().isEmpty()) {
+            throw new ValidationException("Entity name cannot be empty.");
+        }
     }
 }

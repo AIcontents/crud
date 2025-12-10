@@ -1,4 +1,3 @@
-
 package com.example.crudapp.dao;
 
 import java.sql.Connection;
@@ -7,25 +6,27 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class Database {
+    private static final String URL = "jdbc:h2:mem:testdb"; // In-memory database
+    private static final String USER = "sa";
+    private static final String PASSWORD = "";
 
-    private static Connection connection;
-
-    public static void init() {
-        try {
-            connection = DriverManager.getConnection("jdbc:h2:mem:crudapp");
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("CREATE TABLE IF NOT EXISTS entity (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(50), description VARCHAR(255))");
-            }
+    static {
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            String sql = "CREATE TABLE IF NOT EXISTS entities ("
+                    + "id UUID PRIMARY KEY, "
+                    + "name VARCHAR(255) NOT NULL, "
+                    + "description VARCHAR(1024), "
+                    + "createdAt TIMESTAMP, "
+                    + "updatedAt TIMESTAMP)";
+            stmt.executeUpdate(sql);
         } catch (SQLException e) {
             e.printStackTrace();
+            throw new RuntimeException("Failed to initialize database schema", e);
         }
     }
 
-    public static Connection getConnection() {
-        return connection;
-    }
-
-    public static void setConnection(Connection connection) {
-        Database.connection = connection;
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 }
