@@ -6,7 +6,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class Database {
-    private static final String URL = "jdbc:h2:mem:testdb"; // In-memory database
+    // Added DB_CLOSE_DELAY=-1 to prevent the in-memory database from being deleted
+    // as long as the virtual machine is alive.
+    private static final String URL = "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1";
     private static final String USER = "sa";
     private static final String PASSWORD = "";
 
@@ -21,7 +23,8 @@ public class Database {
                     + "updatedAt TIMESTAMP)";
             stmt.executeUpdate(sql);
         } catch (SQLException e) {
-            e.printStackTrace();
+            // This is a critical failure, so we throw a RuntimeException
+            // to stop the application from starting if the DB can't be initialized.
             throw new RuntimeException("Failed to initialize database schema", e);
         }
     }

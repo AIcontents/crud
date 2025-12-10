@@ -18,8 +18,10 @@ public class EntityDAOImpl implements EntityDAO {
         String sql = "INSERT INTO entities (id, name, description, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            entity.setId(UUID.randomUUID()); // Assign a new UUID
+
+            if (entity.getId() == null) {
+                 entity.setId(UUID.randomUUID()); // Assign a new UUID if not present
+            }
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
 
@@ -30,7 +32,7 @@ public class EntityDAOImpl implements EntityDAO {
             pstmt.setTimestamp(5, Timestamp.valueOf(entity.getUpdatedAt()));
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error adding entity", e);
         }
     }
 
@@ -49,7 +51,7 @@ public class EntityDAOImpl implements EntityDAO {
             pstmt.setObject(4, entity.getId());
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error updating entity", e);
         }
     }
 
@@ -61,7 +63,7 @@ public class EntityDAOImpl implements EntityDAO {
             pstmt.setObject(1, id);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error deleting entity", e);
         }
     }
 
@@ -76,7 +78,7 @@ public class EntityDAOImpl implements EntityDAO {
                 return Optional.of(mapRowToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error getting entity by ID", e);
         }
         return Optional.empty();
     }
@@ -92,7 +94,7 @@ public class EntityDAOImpl implements EntityDAO {
                 entities.add(mapRowToEntity(rs));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error getting all entities", e);
         }
         return entities;
     }
