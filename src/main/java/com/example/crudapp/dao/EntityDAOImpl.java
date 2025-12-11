@@ -99,6 +99,49 @@ public class EntityDAOImpl implements EntityDAO {
         return entities;
     }
 
+    @Override
+    public List<Entity> search(String searchTerm, int page, int pageSize) {
+        List<Entity> entities = new ArrayList<>();
+        String sql = "SELECT * FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?) ORDER BY name LIMIT ? OFFSET ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            String searchPattern = (searchTerm == null || searchTerm.trim().isEmpty()) ? null : "%" + searchTerm.trim() + "%";
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+            pstmt.setString(3, searchPattern);
+            pstmt.setInt(4, pageSize);
+            pstmt.setInt(5, (page - 1) * pageSize);
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                entities.add(mapRowToEntity(rs));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error searching entities", e);
+        }
+        return entities;
+    }
+
+    @Override
+    public int getCount(String searchTerm) {
+        String sql = "SELECT COUNT(*) FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?)";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            String searchPattern = (searchTerm == null || searchTerm.trim().isEmpty()) ? null : "%" + searchTerm.trim() + "%";
+            pstmt.setString(1, searchPattern);
+            pstmt.setString(2, searchPattern);
+            pstmt.setString(3, searchPattern);
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error counting entities", e);
+        }
+        return 0;
+    }
+
     private Entity mapRowToEntity(ResultSet rs) throws SQLException {
         return new Entity(
                 (UUID) rs.getObject("id"),

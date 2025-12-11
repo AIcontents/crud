@@ -10,32 +10,30 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
-import javafx.scene.input.MouseEvent;
-
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
-import java.util.UUID;
 
 public class MainController {
 
+    private static final int PAGE_SIZE = 10;
+
     @FXML
     private ListView<Entity> entityListView;
-
     @FXML
     private VBox entityDetailsVBox;
-
     @FXML
     private Label nameLabel;
-
     @FXML
     private Label descriptionLabel;
-
     @FXML
     private Label createdAtLabel;
-
     @FXML
     private Label updatedAtLabel;
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Pagination pagination;
 
     private final EntityDAO entityDAO = new EntityDAOImpl();
     private final ObservableList<Entity> entityList = FXCollections.observableArrayList();
@@ -47,18 +45,30 @@ public class MainController {
         entityListView.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> showEntityDetails(newValue));
 
-        // Add listener for double-click to edit
         entityListView.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
                 handleEditEntity();
             }
         });
 
-        loadEntities();
+        pagination.currentPageIndexProperty().addListener((obs, oldIndex, newIndex) -> updateView());
+
+        updateView();
     }
 
-    private void loadEntities() {
-        entityList.setAll(entityDAO.getAll());
+    private void updateView() {
+        String searchTerm = searchField.getText();
+        int currentPage = pagination.getCurrentPageIndex() + 1;
+
+        int totalItems = entityDAO.getCount(searchTerm);
+        int pageCount = (int) Math.ceil((double) totalItems / PAGE_SIZE);
+        if (pageCount == 0) {
+            pageCount = 1;
+        }
+
+        pagination.setPageCount(pageCount);
+
+        entityList.setAll(entityDAO.search(searchTerm, currentPage, PAGE_SIZE));
         entityDetailsVBox.setVisible(false);
     }
 
@@ -72,6 +82,12 @@ public class MainController {
         } else {
             entityDetailsVBox.setVisible(false);
         }
+    }
+
+    @FXML
+    private void handleSearch() {
+        pagination.setCurrentPageIndex(0);
+        updateView();
     }
 
     @FXML
@@ -99,7 +115,7 @@ public class MainController {
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 entityDAO.delete(selectedEntity.getId());
-                loadEntities();
+                updateView();
             }
         }
     }
@@ -119,7 +135,7 @@ public class MainController {
             final Button okButton = (Button) pane.lookupButton(pane.getButtonTypes().get(0));
             okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
                 if (!controller.processResult()) {
-                    event.consume(); // Prevent dialog from closing
+                    event.consume();
                 }
             });
 
@@ -132,9 +148,8 @@ public class MainController {
                     } else {
                         entityDAO.update(controller.getEntity());
                     }
-                    loadEntities();
+                    updateView();
                 } catch (ValidationException e) {
-                    // This case is handled inside the dialog controller, but as a fallback:
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Validation Error");
                     alert.setContentText(e.getMessage());
