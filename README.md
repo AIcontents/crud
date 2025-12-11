@@ -1,48 +1,48 @@
-# JavaFX CRUD Application
+# JavaFX CRUD-приложение
 
-This is a simple CRUD (Create, Read, Update, Delete) application built with JavaFX and Maven. It demonstrates a basic desktop application for managing a list of entities.
+Это простое CRUD (Create, Read, Update, Delete) приложение, созданное с помощью JavaFX и Maven. Оно демонстрирует базовое десктопное приложение для управления списком сущностей.
 
-## Features
+## Особенности
 
-*   **Create, Read, Update, Delete (CRUD):** Manage a list of entities with a name and description.
-*   **JavaFX UI:** A clean and simple user interface built with FXML.
-*   **In-Memory Database:** Uses H2 in-memory database, so no external database setup is required. The data is reset every time the application starts.
-*   **Data Validation:** Ensures that entities have a name.
-*   **UUIDs and Timestamps:** Entities are identified by a UUID and have `createdAt` and `updatedAt` timestamps.
-*   **Shaded JAR:** Packaged as a single, executable JAR file with all dependencies included.
+*   **CRUD-операции:** Управление списком сущностей с именем и описанием.
+*   **Интерфейс на JavaFX:** Чистый и простой пользовательский интерфейс, созданный с помощью FXML.
+*   **База данных в памяти:** Используется встраиваемая база данных H2, поэтому не требуется настройка внешней базы данных. Данные сбрасываются при каждом запуске приложения.
+*   **Валидация данных:** Гарантирует, что у сущностей есть имя.
+*   **UUID и временные метки:** Сущности идентифицируются по UUID и имеют временные метки `createdAt` и `updatedAt`.
+*   **Shaded JAR:** Упаковано в один исполняемый JAR-файл со всеми зависимостями.
 
-## Requirements
+## Требования
 
-*   **Java JDK 11 or higher:** Required to run the application.
-*   **Apache Maven:** Required to build the project and package the application.
+*   **Java JDK 11 или выше:** Необходимо для запуска приложения.
+*   **Apache Maven:** Необходимо для сборки проекта и упаковки приложения.
 
-## How to Build and Run
+## Как собрать и запустить
 
-1.  **Clone the repository:**
+1.  **Клонируйте репозиторий:**
     ```bash
     git clone https://github.com/AIcontents/crud
     cd crud
     ```
 
-2.  **Build the project using Maven:**
-    This command compiles the code, runs tests, and packages the application into a single executable JAR file in the `target` directory.
+2.  **Соберите проект с помощью Maven:**
+    Эта команда компилирует код, запускает тесты и упаковывает приложение в один исполняемый JAR-файл в директорию `target`.
     ```bash
     mvn package
     ```
 
-3.  **Run the application:**
+3.  **Запустите приложение:**
     ```bash
     java -jar target/crudapp-1.0-SNAPSHOT.jar
     ```
 
-## Project Structure
+## Структура проекта
 
-*   `src/main/java`: Contains the main Java source code.
-    *   `com.example.crudapp.MainApp`: The main entry point of the application.
-    *   `com.example.crudapp.Launcher`: A wrapper class to fix a common JavaFX issue with shaded JARs.
-    *   `com.example.crudapp.controller`: Contains FXML controllers (`MainController`, `EntityDialogController`).
-    *   `com.example.crudapp.dao`: Contains the Data Access Object (DAO) for database interaction (`EntityDAO`, `EntityDAOImpl`, `Database`).
-    *   `com.example.crudapp.model`: Contains the data model (`Entity`, `ValidationException`).
-*   `src/main/resources`: Contains FXML files and other resources.
-*   `src/test/java`: Contains JUnit tests.
-*   `pom.xml`: The Maven project configuration file.
+*   `src/main/java`: Содержит основной исходный код на Java.
+    *   `com.example.crudapp.MainApp`: Основная точка входа в приложение.
+    *   `com.example.crudapp.Launcher`: Класс-обертка для решения распространенной проблемы JavaFX с затененными (shaded) JAR-файлами.
+    *   `com.example.crudapp.controller`: Содержит контроллеры FXML (`MainController`, `EntityDialogController`).
+    *   `com.example.crudapp.dao`: Содержит Data Access Object (DAO) для взаимодействия с базой данных (`EntityDAO`, `EntityDAOImpl`, `Database`).
+    *   `com.example.crudapp.model`: Содержит модель данных (`Entity`, `ValidationException`).
+*   `src/main/resources`: Содержит файлы FXML и другие ресурсы.
+*   `src/test/java`: Содержит тесты JUnit.
+*   `pom.xml`: Файл конфигурации проекта Maven.
