@@ -103,7 +103,7 @@ public class EntityDAOImpl implements EntityDAO {
     }
 
     @Override
-    public List<Entity> search(String searchTerm, String sortBy, boolean sortAsc, int page, int pageSize) {
+    public List<Entity> search(String searchTerm, String sortBy, boolean sortAsc, String filterBy, int page, int pageSize) {
         List<Entity> entities = new ArrayList<>();
         String sortDirection = sortAsc ? "ASC" : "DESC";
         String orderBy;
@@ -113,22 +113,34 @@ public class EntityDAOImpl implements EntityDAO {
                 break;
             case "Name (A-Z)":
             case "Name (Z-A)":
-                orderBy = "name COLLATE NOCASE"; // Case-insensitive sort for SQLite
+                orderBy = "name COLLATE NOCASE";
                 break;
             default:
                 orderBy = "name COLLATE NOCASE";
         }
 
-        String sql = "SELECT * FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?) ORDER BY " + orderBy + " " + sortDirection + " LIMIT ? OFFSET ?";
+        StringBuilder sql = new StringBuilder("SELECT * FROM entities WHERE 1=1 ");
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            sql.append(" AND (name LIKE ? OR description LIKE ?)");
+        }
+
+        if ("Letters Only".equals(filterBy)) {
+            sql.append(" AND name GLOB '[A-Za-z]*'");
+        }
+
+        sql.append(" ORDER BY ").append(orderBy).append(" ").append(sortDirection).append(" LIMIT ? OFFSET ?");
 
         try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            String searchPattern = (searchTerm == null || searchTerm.trim().isEmpty()) ? null : "%" + searchTerm.trim() + "%";
-            pstmt.setString(1, searchPattern);
-            pstmt.setString(2, searchPattern);
-            pstmt.setString(3, searchPattern);
-            pstmt.setInt(4, pageSize);
-            pstmt.setInt(5, (page - 1) * pageSize);
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                String searchPattern = "%" + searchTerm.trim() + "%";
+                pstmt.setString(paramIndex++, searchPattern);
+                pstmt.setString(paramIndex++, searchPattern);
+            }
+            pstmt.setInt(paramIndex++, pageSize);
+            pstmt.setInt(paramIndex, (page - 1) * pageSize);
 
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -142,14 +154,24 @@ public class EntityDAOImpl implements EntityDAO {
 
 
     @Override
-    public int getCount(String searchTerm) {
-        String sql = "SELECT COUNT(*) FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?)";
+    public int getCount(String searchTerm, String filterBy) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM entities WHERE 1=1 ");
+
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            sql.append(" AND (name LIKE ? OR description LIKE ?)");
+        }
+
+        if ("Letters Only".equals(filterBy)) {
+            sql.append(" AND name GLOB '[A-Za-z]*'");
+        }
+
         try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            String searchPattern = (searchTerm == null || searchTerm.trim().isEmpty()) ? null : "%" + searchTerm.trim() + "%";
-            pstmt.setString(1, searchPattern);
-            pstmt.setString(2, searchPattern);
-            pstmt.setString(3, searchPattern);
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                String searchPattern = "%" + searchTerm.trim() + "%";
+                pstmt.setString(1, searchPattern);
+                pstmt.setString(2, searchPattern);
+            }
 
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {

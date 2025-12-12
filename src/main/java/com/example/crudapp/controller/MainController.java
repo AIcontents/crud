@@ -36,6 +36,8 @@ public class MainController {
     private Pagination pagination;
     @FXML
     private ComboBox<String> sortComboBox;
+    @FXML
+    private ComboBox<String> filterComboBox;
 
     private final EntityDAO entityDAO = new EntityDAOImpl();
     private final ObservableList<Entity> entityList = FXCollections.observableArrayList();
@@ -59,6 +61,10 @@ public class MainController {
         sortComboBox.getSelectionModel().selectFirst();
         sortComboBox.valueProperty().addListener((obs, oldVal, newVal) -> updateView());
 
+        filterComboBox.setItems(FXCollections.observableArrayList("All", "Letters Only"));
+        filterComboBox.getSelectionModel().selectFirst();
+        filterComboBox.valueProperty().addListener((obs, oldVal, newVal) -> updateView());
+
         pagination.currentPageIndexProperty().addListener((obs, oldIndex, newIndex) -> updateView());
 
         updateView();
@@ -67,11 +73,12 @@ public class MainController {
     private void updateView() {
         String searchTerm = searchField.getText();
         String sortBy = sortComboBox.getValue();
+        String filterBy = filterComboBox.getValue();
         boolean sortAsc = !"Name (Z-A)".equals(sortBy);
 
         int currentPage = pagination.getCurrentPageIndex() + 1;
 
-        int totalItems = entityDAO.getCount(searchTerm);
+        int totalItems = entityDAO.getCount(searchTerm, filterBy);
         int pageCount = (int) Math.ceil((double) totalItems / PAGE_SIZE);
         if (pageCount == 0) {
             pageCount = 1;
@@ -79,7 +86,7 @@ public class MainController {
 
         pagination.setPageCount(pageCount);
 
-        entityList.setAll(entityDAO.search(searchTerm, sortBy, sortAsc, currentPage, PAGE_SIZE));
+        entityList.setAll(entityDAO.search(searchTerm, sortBy, sortAsc, filterBy, currentPage, PAGE_SIZE));
         entityDetailsVBox.setVisible(false);
     }
 
@@ -126,7 +133,6 @@ public class MainController {
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 entityDAO.delete(selectedEntity.getId());
-                // Go to previous page if the last item on a page is deleted
                 if (entityList.size() == 1 && pagination.getCurrentPageIndex() > 0) {
                     pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
                 }
@@ -166,7 +172,7 @@ public class MainController {
                     }
                     updateView();
                     if (isNewEntity) {
-                        int totalItems = entityDAO.getCount(searchField.getText());
+                        int totalItems = entityDAO.getCount(searchField.getText(), filterComboBox.getValue());
                         int lastPage = (int) Math.ceil((double) totalItems / PAGE_SIZE) - 1;
                         if (lastPage < 0) {
                             lastPage = 0;

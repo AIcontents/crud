@@ -32,6 +32,10 @@
                     <Label text="Sort by:" />
                     <ComboBox fx:id="sortComboBox" />
                 </HBox>
+                 <HBox spacing="5.0">
+                    <Label text="Filter by:" />
+                    <ComboBox fx:id="filterComboBox" />
+                </HBox>
                 <ListView fx:id="entityListView" VBox.vgrow="ALWAYS" />
                 <Pagination fx:id="pagination" pageCount="1" currentPageIndex="0" />
             </VBox>
