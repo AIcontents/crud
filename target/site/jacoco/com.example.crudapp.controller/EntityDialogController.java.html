@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EntityDialogController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">crudapp</a> &gt; <a href="index.source.html" class="el_package">com.example.crudapp.controller</a> &gt; <span class="el_source">EntityDialogController.java</span></div><h1>EntityDialogController.java</h1><pre class="source lang-java linenums">package com.example.crudapp.controller;
+
+import com.example.crudapp.model.Entity;
+import com.example.crudapp.model.ValidationException;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.stage.Window;
+
+<span class="nc" id="L11">public class EntityDialogController {</span>
+
+    @FXML
+    private TextField nameField;
+
+    @FXML
+    private TextArea descriptionArea;
+
+    private Entity entity;
+
+    public void setEntity(Entity entity) {
+<span class="nc" id="L22">        this.entity = entity;</span>
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (entity != null) {</span>
+<span class="nc" id="L24">            nameField.setText(entity.getName());</span>
+<span class="nc" id="L25">            descriptionArea.setText(entity.getDescription());</span>
+        } else {
+<span class="nc" id="L27">            this.entity = new Entity(null, &quot;&quot;, null, null, null); // Create a new one</span>
+        }
+<span class="nc" id="L29">    }</span>
+
+    public Entity getEntity() {
+<span class="nc" id="L32">        return entity;</span>
+    }
+
+    public boolean processResult() {
+<span class="nc" id="L36">        String name = nameField.getText();</span>
+<span class="nc" id="L37">        String description = descriptionArea.getText();</span>
+
+<span class="nc bnc" id="L39" title="All 6 branches missed.">        if (name == null || name.trim().length() &lt; 3 || name.trim().length() &gt; 50) {</span>
+<span class="nc" id="L40">            showAlert(&quot;Validation Error&quot;, &quot;Name must be between 3 and 50 characters.&quot;);</span>
+<span class="nc" id="L41">            return false;</span>
+        }
+
+<span class="nc" id="L44">        entity.setName(name);</span>
+<span class="nc" id="L45">        entity.setDescription(description);</span>
+<span class="nc" id="L46">        return true;</span>
+    }
+
+    private void showAlert(String title, String message) {
+<span class="nc" id="L50">        Alert alert = new Alert(Alert.AlertType.ERROR);</span>
+<span class="nc" id="L51">        alert.setTitle(title);</span>
+<span class="nc" id="L52">        alert.setHeaderText(null);</span>
+<span class="nc" id="L53">        alert.setContentText(message);</span>
+<span class="nc" id="L54">        alert.initOwner(nameField.getScene().getWindow());</span>
+<span class="nc" id="L55">        alert.showAndWait();</span>
+<span class="nc" id="L56">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -25,8 +25,9 @@ public class EntityDAOImpl implements EntityDAO {
             if (entity.getId() == null) {
                 entity.setId(UUID.randomUUID());
             }
-            entity.setCreatedAt(LocalDateTime.now());
-            entity.setUpdatedAt(LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            entity.setCreatedAt(now);
+            entity.setUpdatedAt(now);
 
             pstmt.setString(1, entity.getId().toString());
             pstmt.setString(2, entity.getName());
@@ -89,7 +90,7 @@ public class EntityDAOImpl implements EntityDAO {
     @Override
     public List<Entity> getAll() {
         List<Entity> entities = new ArrayList<>();
-        String sql = "SELECT * FROM entities";
+        String sql = "SELECT * FROM entities ORDER BY name COLLATE NOCASE ASC";
         try (Connection conn = Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -104,43 +105,54 @@ public class EntityDAOImpl implements EntityDAO {
 
     @Override
     public List<Entity> search(String searchTerm, String sortBy, boolean sortAsc, String filterBy, int page, int pageSize) {
-        List<Entity> entities = new ArrayList<>();
-        String sortDirection = sortAsc ? "ASC" : "DESC";
-        String orderBy;
-        switch (sortBy) {
-            case "Date":
-                orderBy = "createdAt";
-                break;
-            case "Name (A-Z)":
-            case "Name (Z-A)":
-                orderBy = "name COLLATE NOCASE";
-                break;
-            default:
-                orderBy = "name COLLATE NOCASE";
-        }
+        return search(searchTerm, filterBy, sortAsc, sortBy, page, pageSize, null, null);
+    }
 
+    @Override
+    public List<Entity> search(String searchTerm, String filterBy, boolean sortAsc, String sortBy, int page, int pageSize, LocalDateTime dateFrom, LocalDateTime dateTo) {
+        List<Entity> entities = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM entities WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             sql.append(" AND (name LIKE ? OR description LIKE ?)");
+            String searchPattern = "%" + searchTerm.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
         }
 
         if ("Letters Only".equals(filterBy)) {
-            sql.append(" AND REGEXP('^[\\p{L}]+$', name)");
+            sql.append(" AND name NOT GLOB '*[^A-Za-z]*'");
+        }
+        
+        if (dateFrom != null) {
+            sql.append(" AND createdAt >= ?");
+            params.add(dateFrom.format(formatter));
+        }
+
+        if (dateTo != null) {
+            sql.append(" AND createdAt <= ?");
+            params.add(dateTo.format(formatter));
+        }
+
+        String sortDirection = sortAsc ? "ASC" : "DESC";
+        String orderBy = "name COLLATE NOCASE"; // Default sort
+        if (sortBy != null) {
+            if (sortBy.equalsIgnoreCase("createdAt")) {
+                orderBy = "createdAt";
+            } 
         }
 
         sql.append(" ORDER BY ").append(orderBy).append(" ").append(sortDirection).append(" LIMIT ? OFFSET ?");
+        params.add(pageSize);
+        params.add((page) * pageSize);
 
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-            int paramIndex = 1;
-            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                String searchPattern = "%" + searchTerm.trim() + "%";
-                pstmt.setString(paramIndex++, searchPattern);
-                pstmt.setString(paramIndex++, searchPattern);
+            
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
             }
-            pstmt.setInt(paramIndex++, pageSize);
-            pstmt.setInt(paramIndex, (page - 1) * pageSize);
 
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
@@ -155,22 +167,39 @@ public class EntityDAOImpl implements EntityDAO {
 
     @Override
     public int getCount(String searchTerm, String filterBy) {
+        return getCount(searchTerm, filterBy, null, null);
+    }
+
+    @Override
+    public int getCount(String searchTerm, String filterBy, LocalDateTime dateFrom, LocalDateTime dateTo) {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM entities WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
 
         if (searchTerm != null && !searchTerm.trim().isEmpty()) {
             sql.append(" AND (name LIKE ? OR description LIKE ?)");
+            String searchPattern = "%" + searchTerm.trim() + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
         }
 
         if ("Letters Only".equals(filterBy)) {
-            sql.append(" AND REGEXP('^[\\p{L}]+$', name)");
+             sql.append(" AND name NOT GLOB '*[^A-Za-z]*'");
+        }
+        
+        if (dateFrom != null) {
+            sql.append(" AND createdAt >= ?");
+            params.add(dateFrom.format(formatter));
+        }
+
+        if (dateTo != null) {
+            sql.append(" AND createdAt <= ?");
+            params.add(dateTo.format(formatter));
         }
 
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-                String searchPattern = "%" + searchTerm.trim() + "%";
-                pstmt.setString(1, searchPattern);
-                pstmt.setString(2, searchPattern);
+             for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
             }
 
             ResultSet rs = pstmt.executeQuery();
@@ -194,8 +223,11 @@ public class EntityDAOImpl implements EntityDAO {
     }
 
     private void validateEntity(Entity entity) throws ValidationException {
-        if (entity.getName() == null || entity.getName().trim().isEmpty()) {
-            throw new ValidationException("Entity name cannot be empty.");
+         if (entity.getName() == null || entity.getName().trim().length() < 3 || entity.getName().trim().length() > 50) {
+            throw new ValidationException("Entity name must be between 3 and 50 characters.");
+        }
+        if (entity.getDescription() != null && entity.getDescription().length() > 250) {
+            throw new ValidationException("Entity description cannot exceed 250 characters.");
         }
     }
 }

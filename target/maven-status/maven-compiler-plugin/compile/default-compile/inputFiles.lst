@@ -1,0 +1,9 @@
+/home/user/crud-app/src/main/java/com/example/crudapp/model/ValidationException.java
+/home/user/crud-app/src/main/java/com/example/crudapp/dao/EntityDAO.java
+/home/user/crud-app/src/main/java/com/example/crudapp/controller/MainController.java
+/home/user/crud-app/src/main/java/com/example/crudapp/dao/EntityDAOImpl.java
+/home/user/crud-app/src/main/java/com/example/crudapp/Launcher.java
+/home/user/crud-app/src/main/java/com/example/crudapp/MainApp.java
+/home/user/crud-app/src/main/java/com/example/crudapp/model/Entity.java
+/home/user/crud-app/src/main/java/com/example/crudapp/controller/EntityDialogController.java
+/home/user/crud-app/src/main/java/com/example/crudapp/dao/Database.java
