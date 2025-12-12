@@ -8,6 +8,8 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Window;
 
+import java.util.function.BiConsumer;
+
 public class EntityDialogController {
 
     @FXML
@@ -17,6 +19,20 @@ public class EntityDialogController {
     private TextArea descriptionArea;
 
     private Entity entity;
+
+    private BiConsumer<String, String> alertDisplayer = (title, message) -> {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.initOwner(nameField.getScene().getWindow());
+        alert.showAndWait();
+    };
+
+    // For testing purposes
+    void setAlertDisplayer(BiConsumer<String, String> alertDisplayer) {
+        this.alertDisplayer = alertDisplayer;
+    }
 
     public void setEntity(Entity entity) {
         this.entity = entity;
@@ -37,7 +53,7 @@ public class EntityDialogController {
         String description = descriptionArea.getText();
 
         if (name == null || name.trim().length() < 3 || name.trim().length() > 50) {
-            showAlert("Validation Error", "Name must be between 3 and 50 characters.");
+            alertDisplayer.accept("Validation Error", "Name must be between 3 and 50 characters.");
             return false;
         }
 
@@ -47,11 +63,6 @@ public class EntityDialogController {
     }
 
     private void showAlert(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.initOwner(nameField.getScene().getWindow());
-        alert.showAndWait();
+        alertDisplayer.accept(title, message);
     }
 }

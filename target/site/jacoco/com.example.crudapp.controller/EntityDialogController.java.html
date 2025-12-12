@@ -8,7 +8,9 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Window;
 
-<span class="nc" id="L11">public class EntityDialogController {</span>
+import java.util.function.BiConsumer;
+
+<span class="nc" id="L13">public class EntityDialogController {</span>
 
     @FXML
     private TextField nameField;
@@ -18,41 +20,50 @@ import javafx.stage.Window;
 
     private Entity entity;
 
+<span class="nc" id="L23">    private BiConsumer&lt;String, String&gt; alertDisplayer = (title, message) -&gt; {</span>
+<span class="nc" id="L24">        Alert alert = new Alert(Alert.AlertType.ERROR);</span>
+<span class="nc" id="L25">        alert.setTitle(title);</span>
+<span class="nc" id="L26">        alert.setHeaderText(null);</span>
+<span class="nc" id="L27">        alert.setContentText(message);</span>
+<span class="nc" id="L28">        alert.initOwner(nameField.getScene().getWindow());</span>
+<span class="nc" id="L29">        alert.showAndWait();</span>
+<span class="nc" id="L30">    };</span>
+
+    // For testing purposes
+    void setAlertDisplayer(BiConsumer&lt;String, String&gt; alertDisplayer) {
+<span class="nc" id="L34">        this.alertDisplayer = alertDisplayer;</span>
+<span class="nc" id="L35">    }</span>
+
     public void setEntity(Entity entity) {
-<span class="nc" id="L22">        this.entity = entity;</span>
-<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (entity != null) {</span>
-<span class="nc" id="L24">            nameField.setText(entity.getName());</span>
-<span class="nc" id="L25">            descriptionArea.setText(entity.getDescription());</span>
+<span class="nc" id="L38">        this.entity = entity;</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (entity != null) {</span>
+<span class="nc" id="L40">            nameField.setText(entity.getName());</span>
+<span class="nc" id="L41">            descriptionArea.setText(entity.getDescription());</span>
         } else {
-<span class="nc" id="L27">            this.entity = new Entity(null, &quot;&quot;, null, null, null); // Create a new one</span>
+<span class="nc" id="L43">            this.entity = new Entity(null, &quot;&quot;, null, null, null); // Create a new one</span>
         }
-<span class="nc" id="L29">    }</span>
+<span class="nc" id="L45">    }</span>
 
     public Entity getEntity() {
-<span class="nc" id="L32">        return entity;</span>
+<span class="nc" id="L48">        return entity;</span>
     }
 
     public boolean processResult() {
-<span class="nc" id="L36">        String name = nameField.getText();</span>
-<span class="nc" id="L37">        String description = descriptionArea.getText();</span>
+<span class="nc" id="L52">        String name = nameField.getText();</span>
+<span class="nc" id="L53">        String description = descriptionArea.getText();</span>
 
-<span class="nc bnc" id="L39" title="All 6 branches missed.">        if (name == null || name.trim().length() &lt; 3 || name.trim().length() &gt; 50) {</span>
-<span class="nc" id="L40">            showAlert(&quot;Validation Error&quot;, &quot;Name must be between 3 and 50 characters.&quot;);</span>
-<span class="nc" id="L41">            return false;</span>
+<span class="nc bnc" id="L55" title="All 6 branches missed.">        if (name == null || name.trim().length() &lt; 3 || name.trim().length() &gt; 50) {</span>
+<span class="nc" id="L56">            alertDisplayer.accept(&quot;Validation Error&quot;, &quot;Name must be between 3 and 50 characters.&quot;);</span>
+<span class="nc" id="L57">            return false;</span>
         }
 
-<span class="nc" id="L44">        entity.setName(name);</span>
-<span class="nc" id="L45">        entity.setDescription(description);</span>
-<span class="nc" id="L46">        return true;</span>
+<span class="nc" id="L60">        entity.setName(name);</span>
+<span class="nc" id="L61">        entity.setDescription(description);</span>
+<span class="nc" id="L62">        return true;</span>
     }
 
     private void showAlert(String title, String message) {
-<span class="nc" id="L50">        Alert alert = new Alert(Alert.AlertType.ERROR);</span>
-<span class="nc" id="L51">        alert.setTitle(title);</span>
-<span class="nc" id="L52">        alert.setHeaderText(null);</span>
-<span class="nc" id="L53">        alert.setContentText(message);</span>
-<span class="nc" id="L54">        alert.initOwner(nameField.getScene().getWindow());</span>
-<span class="nc" id="L55">        alert.showAndWait();</span>
-<span class="nc" id="L56">    }</span>
+<span class="nc" id="L66">        alertDisplayer.accept(title, message);</span>
+<span class="nc" id="L67">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -10,9 +10,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class MainController {
 
@@ -42,6 +44,17 @@ public class MainController {
     private final EntityDAO entityDAO = new EntityDAOImpl();
     private final ObservableList<Entity> entityList = FXCollections.observableArrayList();
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private Supplier<Dialog<ButtonType>> dialogSupplier = () -> {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Confirm Deletion");
+        alert.setHeaderText("Delete Entity");
+        return alert;
+    };
+
+    void setDialogSupplier(Supplier<Dialog<ButtonType>> dialogSupplier) {
+        this.dialogSupplier = dialogSupplier;
+    }
 
     @FXML
     public void initialize() {
@@ -122,15 +135,13 @@ public class MainController {
     }
 
     @FXML
-    private void handleDeleteEntity() {
+    public void handleDeleteEntity() {
         Entity selectedEntity = entityListView.getSelectionModel().getSelectedItem();
         if (selectedEntity != null) {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Confirm Deletion");
-            alert.setHeaderText("Delete Entity");
-            alert.setContentText("Are you sure you want to delete the selected entity: " + selectedEntity.getName() + "?");
+            Dialog<ButtonType> dialog = dialogSupplier.get();
+            ((Alert) dialog).setContentText("Are you sure you want to delete the selected entity: " + selectedEntity.getName() + "?");
 
-            Optional<ButtonType> result = alert.showAndWait();
+            Optional<ButtonType> result = dialog.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 entityDAO.delete(selectedEntity.getId());
                 if (entityList.size() == 1 && pagination.getCurrentPageIndex() > 0) {
