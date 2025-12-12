@@ -5,12 +5,15 @@ import com.example.crudapp.model.ValidationException;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public class EntityDAOImpl implements EntityDAO {
+
+    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Override
     public void add(Entity entity) throws ValidationException {
@@ -20,16 +23,16 @@ public class EntityDAOImpl implements EntityDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             if (entity.getId() == null) {
-                 entity.setId(UUID.randomUUID()); // Assign a new UUID if not present
+                entity.setId(UUID.randomUUID());
             }
             entity.setCreatedAt(LocalDateTime.now());
             entity.setUpdatedAt(LocalDateTime.now());
 
-            pstmt.setObject(1, entity.getId());
+            pstmt.setString(1, entity.getId().toString());
             pstmt.setString(2, entity.getName());
             pstmt.setString(3, entity.getDescription());
-            pstmt.setTimestamp(4, Timestamp.valueOf(entity.getCreatedAt()));
-            pstmt.setTimestamp(5, Timestamp.valueOf(entity.getUpdatedAt()));
+            pstmt.setString(4, entity.getCreatedAt().format(formatter));
+            pstmt.setString(5, entity.getUpdatedAt().format(formatter));
             pstmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error adding entity", e);
@@ -47,8 +50,8 @@ public class EntityDAOImpl implements EntityDAO {
 
             pstmt.setString(1, entity.getName());
             pstmt.setString(2, entity.getDescription());
-            pstmt.setTimestamp(3, Timestamp.valueOf(entity.getUpdatedAt()));
-            pstmt.setObject(4, entity.getId());
+            pstmt.setString(3, entity.getUpdatedAt().format(formatter));
+            pstmt.setString(4, entity.getId().toString());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error updating entity", e);
@@ -60,7 +63,7 @@ public class EntityDAOImpl implements EntityDAO {
         String sql = "DELETE FROM entities WHERE id = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setObject(1, id);
+            pstmt.setString(1, id.toString());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error deleting entity", e);
@@ -72,7 +75,7 @@ public class EntityDAOImpl implements EntityDAO {
         String sql = "SELECT * FROM entities WHERE id = ?";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setObject(1, id);
+            pstmt.setString(1, id.toString());
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 return Optional.of(mapRowToEntity(rs));
@@ -109,13 +112,11 @@ public class EntityDAOImpl implements EntityDAO {
                 orderBy = "createdAt";
                 break;
             case "Name (A-Z)":
-                orderBy = "name";
-                break;
             case "Name (Z-A)":
-                orderBy = "name";
+                orderBy = "name COLLATE NOCASE"; // Case-insensitive sort for SQLite
                 break;
             default:
-                orderBy = "name"; // Default sort
+                orderBy = "name COLLATE NOCASE";
         }
 
         String sql = "SELECT * FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?) ORDER BY " + orderBy + " " + sortDirection + " LIMIT ? OFFSET ?";
@@ -139,6 +140,7 @@ public class EntityDAOImpl implements EntityDAO {
         return entities;
     }
 
+
     @Override
     public int getCount(String searchTerm) {
         String sql = "SELECT COUNT(*) FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?)";
@@ -161,11 +163,11 @@ public class EntityDAOImpl implements EntityDAO {
 
     private Entity mapRowToEntity(ResultSet rs) throws SQLException {
         return new Entity(
-                (UUID) rs.getObject("id"),
+                UUID.fromString(rs.getString("id")),
                 rs.getString("name"),
                 rs.getString("description"),
-                rs.getTimestamp("createdAt").toLocalDateTime(),
-                rs.getTimestamp("updatedAt").toLocalDateTime()
+                LocalDateTime.parse(rs.getString("createdAt"), formatter),
+                LocalDateTime.parse(rs.getString("updatedAt"), formatter)
         );
     }
 
