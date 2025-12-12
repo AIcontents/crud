@@ -1,7 +1,6 @@
 package com.example.crudapp.dao;
 
 import com.example.crudapp.model.Entity;
-import com.example.crudapp.model.ValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +41,7 @@ public class EntityDAOImplTest {
     }
 
     @Test
-    void testAddAndGetEntity() throws ValidationException {
+    void testAddAndGetEntity() {
         UUID id = UUID.randomUUID();
         Entity newEntity = new Entity(id, "Test Entity", "Description", null, null);
         entityDAO.add(newEntity);
@@ -56,7 +55,7 @@ public class EntityDAOImplTest {
     }
 
     @Test
-    void testGetAllEntities() throws ValidationException {
+    void testGetAllEntities() {
         Entity entity1 = new Entity(UUID.randomUUID(), "Entity 1", "Desc 1", null, null);
         Entity entity2 = new Entity(UUID.randomUUID(), "Entity 2", "Desc 2", null, null);
         entityDAO.add(entity1);
@@ -67,7 +66,7 @@ public class EntityDAOImplTest {
     }
 
     @Test
-    void testUpdateEntity() throws ValidationException {
+    void testUpdateEntity() {
         UUID id = UUID.randomUUID();
         Entity entity = new Entity(id, "Original Name", "Original Desc", null, null);
         entityDAO.add(entity);
@@ -83,7 +82,7 @@ public class EntityDAOImplTest {
     }
 
     @Test
-    void testDeleteEntity() throws ValidationException {
+    void testDeleteEntity() {
         UUID id = UUID.randomUUID();
         Entity entity = new Entity(id, "To Be Deleted", "Desc", null, null);
         entityDAO.add(entity);
@@ -96,7 +95,23 @@ public class EntityDAOImplTest {
 
     @Test
     void testAddEntityWithEmptyNameThrowsException() {
-        Entity entity = new Entity(UUID.randomUUID(), "", "Description", null, null);
-        assertThrows(ValidationException.class, () -> entityDAO.add(entity));
+        assertThrows(IllegalArgumentException.class, () -> new Entity(UUID.randomUUID(), "", "Description", null, null));
+    }
+
+    @Test
+    void testAddEntityWithTooLongNameThrowsException() {
+        String longName = "a".repeat(51);
+        assertThrows(IllegalArgumentException.class, () -> new Entity(UUID.randomUUID(), longName, "Description", null, null));
+    }
+
+    @Test
+    void testAddEntityWithTooShortNameThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> new Entity(UUID.randomUUID(), "aa", "Description", null, null));
+    }
+
+    @Test
+    void testAddEntityWithTooLongDescriptionThrowsException() {
+        String longDescription = "a".repeat(256);
+        assertThrows(IllegalArgumentException.class, () -> new Entity(UUID.randomUUID(), "Valid Name", longDescription, null, null));
     }
 }
