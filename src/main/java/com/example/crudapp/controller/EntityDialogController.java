@@ -24,7 +24,7 @@ public class EntityDialogController {
             nameField.setText(entity.getName());
             descriptionArea.setText(entity.getDescription());
         } else {
-            this.entity = new Entity(null, null, null, null, null); // Create a new one
+            this.entity = new Entity(null, "", null, null, null); // Create a new one
         }
     }
 
@@ -36,8 +36,8 @@ public class EntityDialogController {
         String name = nameField.getText();
         String description = descriptionArea.getText();
 
-        if (name == null || name.trim().isEmpty()) {
-            showAlert("Validation Error", "Name cannot be empty.");
+        if (name == null || name.trim().length() < 3 || name.trim().length() > 50) {
+            showAlert("Validation Error", "Name must be between 3 and 50 characters.");
             return false;
         }
 

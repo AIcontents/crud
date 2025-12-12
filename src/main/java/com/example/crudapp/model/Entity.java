@@ -12,8 +12,8 @@ public class Entity {
 
     public Entity(UUID id, String name, String description, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
-        this.setName(name);
-        this.setDescription(description);
+        this.name = name;
+        this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -32,9 +32,6 @@ public class Entity {
     }
 
     public void setName(String name) {
-        if (name == null || name.trim().length() < 3 || name.trim().length() > 50) {
-            throw new IllegalArgumentException("Name must be between 3 and 50 characters.");
-        }
         this.name = name;
     }
 
