@@ -34,6 +34,8 @@ public class MainController {
     private TextField searchField;
     @FXML
     private Pagination pagination;
+    @FXML
+    private ComboBox<String> sortComboBox;
 
     private final EntityDAO entityDAO = new EntityDAOImpl();
     private final ObservableList<Entity> entityList = FXCollections.observableArrayList();
@@ -42,6 +44,8 @@ public class MainController {
     @FXML
     public void initialize() {
         entityListView.setItems(entityList);
+        VBox.setVgrow(entityListView, javafx.scene.layout.Priority.ALWAYS);
+
         entityListView.getSelectionModel().selectedItemProperty().addListener(
                 (observable, oldValue, newValue) -> showEntityDetails(newValue));
 
@@ -51,6 +55,10 @@ public class MainController {
             }
         });
 
+        sortComboBox.setItems(FXCollections.observableArrayList("Date", "Name (A-Z)", "Name (Z-A)"));
+        sortComboBox.getSelectionModel().selectFirst();
+        sortComboBox.valueProperty().addListener((obs, oldVal, newVal) -> updateView());
+
         pagination.currentPageIndexProperty().addListener((obs, oldIndex, newIndex) -> updateView());
 
         updateView();
@@ -58,6 +66,9 @@ public class MainController {
 
     private void updateView() {
         String searchTerm = searchField.getText();
+        String sortBy = sortComboBox.getValue();
+        boolean sortAsc = !"Name (Z-A)".equals(sortBy);
+
         int currentPage = pagination.getCurrentPageIndex() + 1;
 
         int totalItems = entityDAO.getCount(searchTerm);
@@ -68,7 +79,7 @@ public class MainController {
 
         pagination.setPageCount(pageCount);
 
-        entityList.setAll(entityDAO.search(searchTerm, currentPage, PAGE_SIZE));
+        entityList.setAll(entityDAO.search(searchTerm, sortBy, sortAsc, currentPage, PAGE_SIZE));
         entityDetailsVBox.setVisible(false);
     }
 
@@ -115,6 +126,10 @@ public class MainController {
             Optional<ButtonType> result = alert.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 entityDAO.delete(selectedEntity.getId());
+                // Go to previous page if the last item on a page is deleted
+                if (entityList.size() == 1 && pagination.getCurrentPageIndex() > 0) {
+                    pagination.setCurrentPageIndex(pagination.getCurrentPageIndex() - 1);
+                }
                 updateView();
             }
         }
@@ -143,12 +158,21 @@ public class MainController {
 
             if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
                 try {
-                    if (entity == null) {
+                    boolean isNewEntity = (entity == null);
+                    if (isNewEntity) {
                         entityDAO.add(controller.getEntity());
                     } else {
                         entityDAO.update(controller.getEntity());
                     }
                     updateView();
+                    if (isNewEntity) {
+                        int totalItems = entityDAO.getCount(searchField.getText());
+                        int lastPage = (int) Math.ceil((double) totalItems / PAGE_SIZE) - 1;
+                        if (lastPage < 0) {
+                            lastPage = 0;
+                        }
+                        pagination.setCurrentPageIndex(lastPage);
+                    }
                 } catch (ValidationException e) {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Validation Error");

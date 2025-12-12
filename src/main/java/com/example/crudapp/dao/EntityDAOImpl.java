@@ -100,9 +100,26 @@ public class EntityDAOImpl implements EntityDAO {
     }
 
     @Override
-    public List<Entity> search(String searchTerm, int page, int pageSize) {
+    public List<Entity> search(String searchTerm, String sortBy, boolean sortAsc, int page, int pageSize) {
         List<Entity> entities = new ArrayList<>();
-        String sql = "SELECT * FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?) ORDER BY name LIMIT ? OFFSET ?";
+        String sortDirection = sortAsc ? "ASC" : "DESC";
+        String orderBy;
+        switch (sortBy) {
+            case "Date":
+                orderBy = "createdAt";
+                break;
+            case "Name (A-Z)":
+                orderBy = "name";
+                break;
+            case "Name (Z-A)":
+                orderBy = "name";
+                break;
+            default:
+                orderBy = "name"; // Default sort
+        }
+
+        String sql = "SELECT * FROM entities WHERE (? IS NULL OR name LIKE ? OR description LIKE ?) ORDER BY " + orderBy + " " + sortDirection + " LIMIT ? OFFSET ?";
+
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             String searchPattern = (searchTerm == null || searchTerm.trim().isEmpty()) ? null : "%" + searchTerm.trim() + "%";

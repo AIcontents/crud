@@ -13,6 +13,6 @@ public interface EntityDAO {
     void delete(UUID id);
     Optional<Entity> get(UUID id);
     List<Entity> getAll();
-    List<Entity> search(String searchTerm, int page, int pageSize);
+    List<Entity> search(String searchTerm, String sortBy, boolean sortAsc, int page, int pageSize);
     int getCount(String searchTerm);
 }
