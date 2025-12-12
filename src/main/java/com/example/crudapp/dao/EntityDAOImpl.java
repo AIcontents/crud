@@ -126,7 +126,7 @@ public class EntityDAOImpl implements EntityDAO {
         }
 
         if ("Letters Only".equals(filterBy)) {
-            sql.append(" AND name GLOB '[A-Za-z]*'");
+            sql.append(" AND REGEXP('^[\\p{L}]+$', name)");
         }
 
         sql.append(" ORDER BY ").append(orderBy).append(" ").append(sortDirection).append(" LIMIT ? OFFSET ?");
@@ -162,7 +162,7 @@ public class EntityDAOImpl implements EntityDAO {
         }
 
         if ("Letters Only".equals(filterBy)) {
-            sql.append(" AND name GLOB '[A-Za-z]*'");
+            sql.append(" AND REGEXP('^[\\p{L}]+$', name)");
         }
 
         try (Connection conn = Database.getConnection();
