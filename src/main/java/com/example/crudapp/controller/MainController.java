@@ -21,7 +21,7 @@ public class MainController {
     private static final int PAGE_SIZE = 10;
 
     @FXML
-    private ListView<Entity> entityListView;
+    ListView<Entity> entityListView; // Changed to package-private
     @FXML
     private VBox entityDetailsVBox;
     @FXML
@@ -139,7 +139,7 @@ public class MainController {
         Entity selectedEntity = entityListView.getSelectionModel().getSelectedItem();
         if (selectedEntity != null) {
             Dialog<ButtonType> dialog = dialogSupplier.get();
-            ((Alert) dialog).setContentText("Are you sure you want to delete the selected entity: " + selectedEntity.getName() + "?");
+            ((Alert) dialog).setContentText("Are you sure you want to want to delete the selected entity: " + selectedEntity.getName() + "?");
 
             Optional<ButtonType> result = dialog.showAndWait();
             if (result.isPresent() && result.get() == ButtonType.OK) {

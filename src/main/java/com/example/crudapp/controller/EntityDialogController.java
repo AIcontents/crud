@@ -1,31 +1,32 @@
 package com.example.crudapp.controller;
 
 import com.example.crudapp.model.Entity;
-import com.example.crudapp.model.ValidationException;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.stage.Window;
 
 import java.util.function.BiConsumer;
 
 public class EntityDialogController {
 
     @FXML
-    private TextField nameField;
+    TextField nameField; // Changed to package-private
 
     @FXML
-    private TextArea descriptionArea;
+    TextArea descriptionArea; // Changed to package-private
 
     private Entity entity;
 
-    private BiConsumer<String, String> alertDisplayer = (title, message) -> {
+    // Allow mocking the alert mechanism for tests
+    BiConsumer<String, String> alertDisplayer = (title, message) -> {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-        alert.initOwner(nameField.getScene().getWindow());
+        if (nameField.getScene() != null) { // Avoid error in headless test
+            alert.initOwner(nameField.getScene().getWindow());
+        }
         alert.showAndWait();
     };
 
@@ -37,8 +38,8 @@ public class EntityDialogController {
     public void setEntity(Entity entity) {
         this.entity = entity;
         if (entity != null) {
-            nameField.setText(entity.getName());
-            descriptionArea.setText(entity.getDescription());
+            if (nameField != null) nameField.setText(entity.getName());
+            if (descriptionArea != null) descriptionArea.setText(entity.getDescription());
         } else {
             this.entity = new Entity(null, "", null, null, null); // Create a new one
         }
@@ -60,9 +61,5 @@ public class EntityDialogController {
         entity.setName(name);
         entity.setDescription(description);
         return true;
-    }
-
-    private void showAlert(String title, String message) {
-        alertDisplayer.accept(title, message);
     }
 }

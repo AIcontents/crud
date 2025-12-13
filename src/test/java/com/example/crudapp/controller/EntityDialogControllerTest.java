@@ -1,48 +1,42 @@
 package com.example.crudapp.controller;
 
 import com.example.crudapp.model.Entity;
-import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class EntityDialogControllerTest {
+public class EntityDialogControllerTest extends JavaFxTestBase {
 
-    @InjectMocks
+    @Mock
+    private BiConsumer<String, String> alertDisplayer;
+
+    @Captor
+    private ArgumentCaptor<String> titleCaptor;
+
+    @Captor
+    private ArgumentCaptor<String> messageCaptor;
+
     private EntityDialogController controller;
-
-    private TextField nameField;
-    private TextArea descriptionArea;
 
     @BeforeEach
     public void setUp() {
-        nameField = new TextField();
-        descriptionArea = new TextArea();
         controller = new EntityDialogController();
-        setFields(controller, nameField, descriptionArea);
-    }
-
-    private void setFields(EntityDialogController controller, TextField nameField, TextArea descriptionArea) {
-        try {
-            java.lang.reflect.Field nameFieldVar = EntityDialogController.class.getDeclaredField("nameField");
-            nameFieldVar.setAccessible(true);
-            nameFieldVar.set(controller, nameField);
-
-            java.lang.reflect.Field descriptionAreaVar = EntityDialogController.class.getDeclaredField("descriptionArea");
-            descriptionAreaVar.setAccessible(true);
-            descriptionAreaVar.set(controller, descriptionArea);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        controller.nameField = new TextField();
+        controller.descriptionArea = new TextArea();
+        controller.setAlertDisplayer(alertDisplayer);
     }
 
     @Test
@@ -50,37 +44,56 @@ public class EntityDialogControllerTest {
         controller.setEntity(null);
         assertNotNull(controller.getEntity());
         assertEquals("", controller.getEntity().getName());
+        assertTrue(controller.nameField.getText().isEmpty());
+        assertTrue(controller.descriptionArea.getText().isEmpty());
     }
 
     @Test
     public void testSetEntity_withExistingEntity() {
-        Entity entity = new Entity(null, "Test", "Desc", null, null);
+        Entity entity = new Entity(UUID.randomUUID(), "Test", "Desc", null, null);
         controller.setEntity(entity);
-        assertEquals("Test", nameField.getText());
-        assertEquals("Desc", descriptionArea.getText());
+        assertEquals("Test", controller.nameField.getText());
+        assertEquals("Desc", controller.descriptionArea.getText());
     }
 
     @Test
     public void testProcessResult_validName() {
         controller.setEntity(null);
-        nameField.setText("Valid Name");
-        descriptionArea.setText("Some description");
-        assertTrue(controller.processResult());
+        controller.nameField.setText("Valid Name");
+        controller.descriptionArea.setText("Some description");
+        boolean result = controller.processResult();
+        assertTrue(result);
         assertEquals("Valid Name", controller.getEntity().getName());
         assertEquals("Some description", controller.getEntity().getDescription());
+        verify(alertDisplayer, never()).accept(anyString(), anyString());
     }
 
     @Test
     public void testProcessResult_nameTooShort() {
         controller.setEntity(null);
-        nameField.setText("a");
-        assertFalse(controller.processResult());
+        controller.nameField.setText("a");
+        boolean result = controller.processResult();
+        assertFalse(result);
+        verify(alertDisplayer).accept(titleCaptor.capture(), messageCaptor.capture());
+        assertEquals("Validation Error", titleCaptor.getValue());
+        assertEquals("Name must be between 3 and 50 characters.", messageCaptor.getValue());
     }
 
     @Test
     public void testProcessResult_nameTooLong() {
         controller.setEntity(null);
-        nameField.setText("a".repeat(51));
-        assertFalse(controller.processResult());
+        controller.nameField.setText("a".repeat(51));
+        boolean result = controller.processResult();
+        assertFalse(result);
+        verify(alertDisplayer).accept(anyString(), eq("Name must be between 3 and 50 characters."));
+    }
+    
+    @Test
+    public void testProcessResult_nameIsNull() {
+        controller.setEntity(null);
+        controller.nameField.setText(null);
+        boolean result = controller.processResult();
+        assertFalse(result);
+        verify(alertDisplayer).accept(anyString(), eq("Name must be between 3 and 50 characters."));
     }
 }
